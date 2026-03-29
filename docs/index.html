@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Options Pricing & Volatility Surface Modeling</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0d1117;
+      color: #c9d1d9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+    }
+
+    header {
+      padding: 52px 32px 40px;
+      text-align: center;
+      border-bottom: 1px solid #21262d;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #e6edf3;
+      letter-spacing: -0.02em;
+    }
+
+    header .subtitle {
+      margin-top: 10px;
+      font-size: 0.95rem;
+      color: #8b949e;
+      max-width: 620px;
+      margin-left: auto;
+      margin-right: auto;
+      line-height: 1.6;
+    }
+
+    .stats-bar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 28px;
+    }
+
+    .stat {
+      background: #161b22;
+      border: 1px solid #21262d;
+      border-radius: 8px;
+      padding: 12px 20px;
+      text-align: center;
+      min-width: 130px;
+    }
+
+    .stat-value {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #58a6ff;
+      line-height: 1;
+    }
+
+    .stat-label {
+      font-size: 0.72rem;
+      color: #8b949e;
+      margin-top: 5px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .header-links {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 24px;
+    }
+
+    .header-links a {
+      display: inline-block;
+      padding: 8px 18px;
+      background: #21262d;
+      color: #c9d1d9;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 0.85rem;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .header-links a:hover { background: #30363d; border-color: #8b949e; }
+    .header-links a.primary { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+    .header-links a.primary:hover { background: #388bfd; border-color: #388bfd; }
+
+    /* Filter bar */
+    .filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      max-width: 1200px;
+      margin: 32px auto 0;
+      padding: 0 24px;
+    }
+
+    .filter-btn {
+      padding: 6px 16px;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 20px;
+      color: #8b949e;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .filter-btn:hover { border-color: #58a6ff; color: #c9d1d9; }
+
+    .filter-btn.active {
+      background: #1f6feb;
+      border-color: #1f6feb;
+      color: #fff;
+    }
+
+    .sections { max-width: 1200px; margin: 0 auto; padding: 40px 24px 80px; }
+
+    .section { margin-bottom: 60px; }
+
+    .section-header { margin-bottom: 20px; }
+
+    .section-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #58a6ff;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #21262d;
+    }
+
+    .section-desc {
+      margin-top: 8px;
+      font-size: 0.85rem;
+      color: #8b949e;
+      line-height: 1.6;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 16px;
+    }
+
+    .grid.wide {
+      grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
+    }
+
+    .card {
+      background: #161b22;
+      border: 1px solid #21262d;
+      border-radius: 8px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: border-color 0.15s, transform 0.15s;
+    }
+
+    .card:hover { border-color: #58a6ff; transform: translateY(-2px); }
+
+    .card.hidden { display: none; }
+
+    .card img {
+      width: 100%;
+      display: block;
+      background: #0d1117;
+    }
+
+    .card-body { padding: 12px 14px 14px; }
+
+    .card-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #e6edf3;
+    }
+
+    .card-desc {
+      margin-top: 4px;
+      font-size: 0.78rem;
+      color: #8b949e;
+      line-height: 1.5;
+    }
+
+    .tag {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 2px 8px;
+      background: #1f2937;
+      border: 1px solid #21262d;
+      border-radius: 20px;
+      font-size: 0.7rem;
+      color: #58a6ff;
+    }
+
+    /* Empty state when filter matches nothing */
+    .section.all-hidden { display: none; }
+
+    /* Lightbox */
+    .lightbox {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.92);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      padding: 24px;
+    }
+
+    .lightbox.active { display: flex; }
+
+    .lightbox img {
+      max-width: 90vw;
+      max-height: 76vh;
+      border-radius: 6px;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.7);
+      transition: opacity 0.15s;
+    }
+
+    .lightbox img.fading { opacity: 0; }
+
+    .lightbox-caption {
+      margin-top: 12px;
+      text-align: center;
+      max-width: 700px;
+    }
+
+    .lightbox-caption .lc-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #e6edf3;
+    }
+
+    .lightbox-caption .lc-desc {
+      margin-top: 4px;
+      font-size: 0.82rem;
+      color: #8b949e;
+      line-height: 1.5;
+    }
+
+    .lightbox-counter {
+      margin-top: 10px;
+      font-size: 0.75rem;
+      color: #484f58;
+      letter-spacing: 0.05em;
+    }
+
+    .lightbox-close {
+      position: fixed;
+      top: 20px;
+      right: 24px;
+      background: none;
+      border: none;
+      color: #8b949e;
+      font-size: 1.8rem;
+      cursor: pointer;
+      line-height: 1;
+      transition: color 0.15s;
+    }
+
+    .lightbox-close:hover { color: #e6edf3; }
+
+    .lightbox-nav {
+      position: fixed;
+      top: 50%;
+      transform: translateY(-50%);
+      background: #21262d;
+      border: 1px solid #30363d;
+      color: #c9d1d9;
+      font-size: 1.4rem;
+      padding: 10px 16px;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: background 0.15s;
+    }
+
+    .lightbox-nav:hover { background: #30363d; }
+    .lightbox-nav.prev { left: 16px; }
+    .lightbox-nav.next { right: 16px; }
+
+    @media (max-width: 600px) {
+      .lightbox-nav { display: none; }
+      .grid { grid-template-columns: 1fr; }
+      .stats-bar { gap: 8px; }
+      .stat { min-width: 100px; padding: 10px 14px; }
+      .filter-bar { gap: 6px; }
+      .filter-btn { font-size: 0.75rem; padding: 5px 12px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Options Pricing &amp; Volatility Surface Modeling</h1>
+  <p class="subtitle">
+    Eight-phase quantitative finance engine built from Black-Scholes analytics to Heston stochastic volatility, Merton jump diffusion, and SABR, all calibrated to live SPY option chain data and validated with a full test suite.
+  </p>
+
+  <div class="stats-bar">
+    <div class="stat">
+      <div class="stat-value" data-target="1.93" data-suffix="%">0%</div>
+      <div class="stat-label">Heston RMSE</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value" data-target="0.97" data-suffix="%">0%</div>
+      <div class="stat-label">SABR RMSE</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value" data-target="98.2" data-suffix="%">0%</div>
+      <div class="stat-label">MC Variance Reduction</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value" data-target="93.2" data-suffix="%">0%</div>
+      <div class="stat-label">Test Pass Rate (82/88)</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value" data-target="7" data-suffix="">0</div>
+      <div class="stat-label">Pricing Models</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value" data-target="960" data-suffix="">0</div>
+      <div class="stat-label">SPY Contracts Calibrated</div>
+    </div>
+  </div>
+
+  <div class="header-links">
+    <a class="primary" href="https://github.com/kshitijbhandari/Options-Pricing-and-Volatility-Surface-Modeling-in-Python" target="_blank">View on GitHub</a>
+  </div>
+</header>
+
+<div class="filter-bar">
+  <button class="filter-btn active" data-filter="all">All</button>
+  <button class="filter-btn" data-filter="iv-surface">IV Surface</button>
+  <button class="filter-btn" data-filter="smile">Smile &amp; Term Structure</button>
+  <button class="filter-btn" data-filter="greeks">Greeks</button>
+  <button class="filter-btn" data-filter="numerical">Numerical Methods</button>
+  <button class="filter-btn" data-filter="calibration">Calibration</button>
+  <button class="filter-btn" data-filter="validation">Validation</button>
+</div>
+
+<div class="sections">
+
+  <!-- SECTION 1: IV SURFACE -->
+  <div class="section" data-section="iv-surface">
+    <div class="section-header">
+      <div class="section-title">Implied Volatility Surface</div>
+      <div class="section-desc">
+        The IV surface shows how implied volatility varies by strike (moneyness) and expiry. Black-Scholes predicts a flat surface, but real markets don't. These plots show how each model reconstructs the market's observed skew and term structure from its parameters.
+      </div>
+    </div>
+    <div class="grid wide">
+      <div class="card" data-category="iv-surface" data-title="IV Surface: Market vs Models (2x2)" data-desc="Side-by-side comparison of the market IV surface against Heston, SABR, and Merton reconstructions. Consistent color scale across all four panels lets you see directly which model captures the skew and curvature most faithfully." onclick="openLightbox(this)">
+        <img src="https://raw.githubusercontent.com/kshitijbhandari/Options-Pricing-and-Volatility-Surface-Modeling-in-Python/master/outputs/plot1_iv_surface.png" alt="IV Surface: Market vs Models" loading="lazy"/>
+        <div class="card-body">
+          <div class="card-title">IV Surface: Market vs All Models</div>
+          <div class="card-desc">Market surface alongside Heston, SABR, and Merton. Consistent color scale for direct visual comparison across all four panels.</div>
+          <span class="tag">Phase 7</span>
+        </div>
+      </div>
+      <div class="card" data-category="iv-surface" data-title="3D Implied Volatility Surface" data-desc="Three-dimensional view of the market IV surface. The steep downward slope toward OTM puts (left side) is the volatility skew. The market charges a premium for downside protection that Black-Scholes cannot explain with a single constant vol." onclick="openLightbox(this)">
+        <img src="https://raw.githubusercontent.com/kshitijbhandari/Options-Pricing-and-Volatility-Surface-Modeling-in-Python/master/outputs/iv_surface_3d.png" alt="3D IV Surface" loading="lazy"/>
+        <div class="card-body">
+          <div class="card-title">3D Implied Volatility Surface</div>
+          <div class="card-desc">Market IV as a 3D landscape. The downward skew toward OTM puts is the volatility smirk, driven by crash fear and leverage effect.</div>
+          <span class="tag">Phase 7</span>
+        </div>
+      </div>
+      <div class="card" data-category="iv-surface" data-title="IV Surface Comparison: Heston vs SABR vs Merton" data-desc="Detailed per-model surface comparison showing which regions each model fits well or poorly. SABR tracks ATM vol most tightly (per-slice calibration). Heston gives the smoothest globally consistent surface. Merton overshoots short-term OTM puts." onclick="openLightbox(this)">
+        <img src="https://raw.githubusercontent.com/kshitijbhandari/Options-Pricing-and-Volatility-Surface-Modeling-in-Python/master/outputs/iv_surface_comparison.png" alt="IV Surface Comparison" loading="lazy"/>
+        <div class="card-body">
+          <div class="card-title">Model IV Surfaces: Individual View</div>
+          <div class="card-desc">Each model's reconstructed surface individually. Highlights where Heston, SABR, and Merton diverge from each other and from market.</div>
+          <span class="tag">Phase 5</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: SMILE & TERM STRUCTURE -->
+  <div class="section" data-section="smile">
+    <div class="section-header">
+      <div class="section-title">Volatility Smile &amp; Term Structure</div>
+      <div class="section-desc">
+        Slicing the IV surface by expiry gives the volatility smile, showing how IV varies across strikes for a fixed maturity. The term structure shows how ATM vol and skew evolve over time. These are the key patterns every model tries to reproduce.
+      </div>
+    </div>
+    <div class="grid">
+      <div class="card" data-category="smile" data-title="Per-Expiry Smile Overlays: All Models" data-desc="Four expiry slices from short-dated (1 month) to long-dated (1 year). All three stochastic models overlaid on market scatter in each panel, with RMSE annotated. Merton's jump effect is most visible at the shortest expiry. The steep left wing that diffusion alone can't produce." onclick="openLightbox(this)">
+        <img src="https://raw.githubusercontent.com/kshitijbhandari/Options-Pricing-and-Volatility-Surface-Modeling-in-Python/master/outputs/plot2_smile_overlay.png" alt="Per-Expiry Smile Overlays" loading="lazy"/>
+        <div class="card-body">
+          <div class="card-title">Per-Expiry Smile Overlays</div>
+          <div class="card-desc">All three models vs market at 4 expiries. RMSE annotated per panel. Short-dated slice shows Merton's jump signature most clearly.</div>
+          <span class="tag">Phase 7</span>
+        </div>
+      </div>
+      <div class="card" data-category="smile" data-title="IV Smiles by Expiry: Market Data" data-desc="Market implied volatility smile across multiple expiries. Each curve is one expiry date. Notice how short-dated smiles are steeper (more skewed) than long-dated ones. Jump risk matters more at short horizons, mean-reversion smooths it out over time." onclick="openLightbox(this)">
+        <img src="https://raw.githubusercontent.com/kshitijbhandari/Options-Pricing-and-Volatility-Surface-Modeling-in-Python/master/outputs/iv_smiles_by_expiry.png" alt="IV Smiles by Expiry" loading="lazy"/>
+        <div class="card-body">
+          <div class="card-title">Market IV Smiles by Expiry</div>
+          <div class="card-desc">Market smiles across expiries. Short-dated curves are steeper, flattening as term increases. Jump risk dominates short-term, mean reversion long-term.</div>
+          <span class="tag">Phase 1</span>
+        </div>
+      </div>
+      <div class="card" data-category="smile" data-title="Model vs Market Smile: Single Expiry" data-desc="Close-up smile comparison for a single expiry. Market quotes (scatter) vs each model's fitted curve. Shows which model tracks OTM puts most accurately. The steepest part of the smile that represents crash protection." onclick="openLightbox(this)">
+        <img src="https://raw.githubusercontent.com/kshitijbhandari/Options-Pricing-and-Volatility-Surface-Modeling-in-Python/master/outputs/iv_smile_comparison.png" alt="Model vs Market Smile" loading="lazy"/>
+        <div class="card-body">
+          <div class="card-title">Model vs Market: Single Expiry Smile</div>
+          <div class="card-desc">Detailed smile fit for one expiry. Market scatter vs each model's curve. OTM put wing (left side) is the hardest region to fit.</div>
+          <span class="tag">Phase 5</span>
+        </div>
+      </div>
+      <div class="card" data-category="smile" data-title="ATM Vol & Skew Term Structure" data-desc="Two subplots: (top) ATM implied vol vs time to expiry for market and all three models. Shows whether each model matches the market's vol term structure. (bottom) IV skew (25-delta put minus 25-delta call) vs expiry. Merton shows steepest short-term skew, confirming jumps drive near-term crash premium." onclick="openLightbox(this)">
+        <img src="https://raw.githubusercontent.com/kshitijbhandari/Options-Pricing-and-Volatility-Surface-Modeling-in-Python/master/outputs/plot5_term_structure.png" alt="ATM Vol Term Structure" loading="lazy"/>
+        <div class="card-body">
+          <div class="card-title">ATM Vol &amp; Skew Term Structure</div>
+          <div class="card-desc">ATM vol (top) and IV skew (bottom) vs expiry for all models. Merton's steepest short-term skew confirms jumps explain near-term crash premium.</div>
+          <span class="tag">Phase 7</span>
+        </div>
+      </div>
+      <div class="card" data-category="smile" data-title="IV Term Structure: Market ATM Vol" data-desc="Market ATM implied volatility plotted against days to expiry. Shows whether the market is in contango (vol increasing with time) or backwardation (near-term vol elevated). The shape informs which model is best suited for current market conditions." onclick="openLightbox(this)">
+        <img src="https://raw.githubusercontent.com/kshitijbhandari/Options-Pricing-and-Volatility-Surface-Modeling-in-Python/master/outputs/iv_term_structure.png" alt="IV Term Structure" loading="lazy"/>
+        <div class="card-body">
+          <div class="card-title">Market ATM Vol Term Structure</div>
+          <div class="card-desc">Market ATM vol vs time to expiry. Reveals whether near-term or long-term uncertainty is priced higher at the snapshot date.</div>
+          <span class="tag">Phase 1</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 3: GREEKS -->
+  <div class="section" data-section="greeks">
+    <div class="section-header">
+      <div class="section-title">Option Greeks</div>
+      <div class="section-desc">
+        Greeks measure how an option's price changes with respect to market variables, forming the foundation of hedging. Delta and Gamma surfaces show how hedge ratios shift as spot price and time to expiry change.
+      </div>
+    </div>
+    <div class="grid">
+      <div class="card" data-category="greeks" data-title="Delta, Gamma & Vega Surfaces over (S, T)" data-desc="Three 3D surfaces plotted over a grid of spot prices and expiries, using real market vol. Delta (top): probability of expiring in the money, flattens to 0 or 1 as S moves away from strike. Gamma (middle): rate of delta change, peaks sharply ATM at short expiry where convexity risk is highest. Vega (bottom): vol sensitivity, highest for longer-dated ATM options." onclick="openLightbox(this)">
+        <img src="https://raw.githubusercontent.com/kshitijbhandari/Options-Pricing-and-Volatility-Surface-Modeling-in-Python/master/outputs/plot3_greeks_surface.png" alt="Greeks Surfaces" loading="lazy"/>
+        <div class="card-body">
+          <div class="card-title">Delta, Gamma &amp; Vega Surfaces</div>
+          <div class="card-desc">All three greeks as 3D surfaces over (Spot, Expiry). Gamma peaks sharply ATM at short expiry, the highest convexity risk zone for market makers.</div>
+          <span class="tag">Phase 7</span>
+        </div>
+      </div>
+      <div class="card" data-category="greeks" data-title="Black-Scholes Greeks: All Five" data-desc="Analytical Black-Scholes Greeks plotted across strikes for a fixed expiry. Includes Delta, Gamma, Vega, Theta (time decay), and Rho (rate sensitivity). Validates that all five sensitivities follow the expected theoretical shape. Theta is most negative ATM where time value is highest." onclick="openLightbox(this)">
+        <img src="https://raw.githubusercontent.com/kshitijbhandari/Options-Pricing-and-Volatility-Surface-Modeling-in-Python/master/outputs/phase1_bs_greeks.png" alt="Black-Scholes Greeks" loading="lazy"/>
+        <div class="card-body">
+          <div class="card-title">Black-Scholes Greeks: All Five</div>
+          <div class="card-desc">Delta, Gamma, Vega, Theta, and Rho across strikes. Theta most negative ATM (highest time value), Vega peaks ATM, Delta transitions from 0 to 1 through strike.</div>
+          <span class="tag">Phase 2</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 4: NUMERICAL METHODS -->
+  <div class="section" data-section="numerical">
+    <div class="section-header">
+      <div class="section-title">Numerical Methods &amp; Convergence</div>
+      <div class="section-desc">
+        Three approaches to numerically pricing options: binomial trees, Monte Carlo simulation, and finite difference PDE solvers, all converging to the same Black-Scholes benchmark. These plots demonstrate convergence rates, stability properties, and accuracy trade-offs between schemes.
+      </div>
+    </div>
+    <div class="grid">
+      <div class="card" data-category="numerical" data-title="Binomial and Monte Carlo Convergence: Combined" data-desc="Left panel: binomial tree price vs number of time steps N, oscillating but tightening around the Black-Scholes price at rate O(1/N). Right panel: Monte Carlo price + 95% confidence interval vs number of paths. CI shrinks at O(1/sqrt(N)), with the true BS price always inside the band. Both confirm the theoretical convergence rates." onclick="openLightbox(this)">
+        <img src="https://raw.githubusercontent.com/kshitijbhandari/Options-Pricing-and-Volatility-Surface-Modeling-in-Python/master/outputs/plot4_convergence.png" alt="Binomial + MC Convergence" loading="lazy"/>
+        <div class="card-body">
+          <div class="card-title">Binomial &amp; Monte Carlo Convergence</div>
+          <div class="card-desc">Both methods converging to BS benchmark. Binomial at O(1/N), MC confidence interval shrinking at O(1/sqrt(N)). Theoretical rates confirmed empirically.</div>
+          <span class="tag">Phase 7</span>
+        </div>
+      </div>
+      <div class="card" data-category="numerical" data-title="Binomial Tree Convergence" data-desc="CRR binomial tree price plotted against number of steps N. The even/odd oscillation is characteristic of the CRR scheme. The tree alternates between slightly over- and under-estimating as N increases. The envelope converges to the exact BS price at N~500." onclick="openLightbox(this)">
+        <img src="https://raw.githubusercontent.com/kshitijbhandari/Options-Pricing-and-Volatility-Surface-Modeling-in-Python/master/outputs/binomial_convergence.png" alt="Binomial Tree Convergence" loading="lazy"/>
+        <div class="card-body">
+          <div class="card-title">Binomial Tree Convergence</div>
+          <div class="card-desc">CRR tree price vs N steps. Even/odd oscillation is expected. The envelope tightens to the exact BS price at N=500. Error &lt; 0.005 achieved.</div>
+          <span class="tag">Phase 3</span>
+        </div>
+      </div>
+      <div class="card" data-category="numerical" data-title="Monte Carlo Convergence with Confidence Intervals" data-desc="MC option price estimate vs number of simulation paths, with 95% confidence bands. As paths increase, the band narrows at the theoretical O(1/sqrt(N)) rate. The true Black-Scholes price stays inside the band at all path counts, confirming the simulation is unbiased." onclick="openLightbox(this)">
+        <img src="https://raw.githubusercontent.com/kshitijbhandari/Options-Pricing-and-Volatility-Surface-Modeling-in-Python/master/outputs/mc_convergence.png" alt="Monte Carlo Convergence" loading="lazy"/>
+        <div class="card-body">
+          <div class="card-title">Monte Carlo Convergence</div>
+          <div class="card-desc">MC price and 95% CI vs path count. CI narrows at O(1/sqrt(N)). BS price stays inside the band throughout, confirming the estimator is unbiased.</div>
+          <span class="tag">Phase 3</span>
+        </div>
+      </div>
+      <div class="card" data-category="numerical" data-title="Finite Difference Scheme Comparison: Explicit vs Implicit vs CN" data-desc="Prices from all three FD schemes vs number of time steps N. Explicit scheme blows up at low N (Courant stability condition violated). Implicit stays stable but converges slowly (first order). Crank-Nicolson (CN) converges fastest. CN at N=20 beats Implicit at N=5,000 due to second-order accuracy." onclick="openLightbox(this)">
+        <img src="https://raw.githubusercontent.com/kshitijbhandari/Options-Pricing-and-Volatility-Surface-Modeling-in-Python/master/outputs/method_comparison.png" alt="FD Scheme Comparison" loading="lazy"/>
+        <div class="card-body">
+          <div class="card-title">FD Scheme Comparison: Explicit / Implicit / CN</div>
+          <div class="card-desc">Explicit blows up below the Courant threshold. CN converges 2.9x faster than Implicit. CN at N=20 beats Implicit at N=5,000. Second-order accuracy in action.</div>
+          <span class="tag">Phase 4</span>
+        </div>
+      </div>
+      <div class="card" data-category="numerical" data-title="Finite Difference Convergence" data-desc="Error vs grid refinement for Implicit and Crank-Nicolson schemes on a log-log scale. The slope confirms the theoretical convergence order: O(dt) for Implicit and O(dt^2) for CN. The steeper slope for CN is the empirical proof of second-order accuracy." onclick="openLightbox(this)">
+        <img src="https://raw.githubusercontent.com/kshitijbhandari/Options-Pricing-and-Volatility-Surface-Modeling-in-Python/master/outputs/fd_convergence.png" alt="Finite Difference Convergence" loading="lazy"/>
+        <div class="card-body">
+          <div class="card-title">Finite Difference Convergence (Log Scale)</div>
+          <div class="card-desc">Error vs grid size on log-log scale. CN slope is twice as steep as Implicit. Empirical confirmation of O(dt^2) vs O(dt) convergence orders.</div>
+          <span class="tag">Phase 4</span>
+        </div>
+      </div>
+      <div class="card" data-category="numerical" data-title="American Put: Early Exercise Boundary" data-desc="The critical stock price below which it is optimal to exercise an American put early, plotted over time. As expiry approaches, this boundary rises toward the strike, meaning you need a larger loss before exercising. Computed using the Crank-Nicolson PDE scheme with early-exercise constraint applied at each time step." onclick="openLightbox(this)">
+        <img src="https://raw.githubusercontent.com/kshitijbhandari/Options-Pricing-and-Volatility-Surface-Modeling-in-Python/master/outputs/american_put_fd.png" alt="American Put Early Exercise Boundary" loading="lazy"/>
+        <div class="card-body">
+          <div class="card-title">American Put: Early Exercise Boundary</div>
+          <div class="card-desc">The stock price at which early exercise becomes optimal, over time to expiry. Rises toward strike as expiry nears. Computed via CN with exercise constraint at each step.</div>
+          <span class="tag">Phase 4</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 5: CALIBRATION -->
+  <div class="section" data-section="calibration">
+    <div class="section-header">
+      <div class="section-title">Model Calibration</div>
+      <div class="section-desc">
+        Calibration fits model parameters to real market prices by minimizing the difference between model-implied and market-implied volatilities across all strikes and expiries simultaneously. All three stochastic models were calibrated to a live SPY option chain snapshot using multi-start L-BFGS-B optimization.
+      </div>
+    </div>
+    <div class="grid wide">
+      <div class="card" data-category="calibration" data-title="Calibration Fit: Model vs Market IV" data-desc="Model-implied volatilities vs market-implied volatilities after calibration. Points clustered on the diagonal represent a perfect fit. Heston achieves 1.93% RMSE, SABR 0.97%, Merton 5.88% across 960 SPY contracts. Merton's larger scatter at low IV values reflects jump diffusion's difficulty fitting the long-dated, near-ATM contracts." onclick="openLightbox(this)">
+        <img src="https://raw.githubusercontent.com/kshitijbhandari/Options-Pricing-and-Volatility-Surface-Modeling-in-Python/master/outputs/calibration_fit.png" alt="Calibration Fit" loading="lazy"/>
+        <div class="card-body">
+          <div class="card-title">Calibration Fit: Model vs Market IV</div>
+          <div class="card-desc">Model IV vs market IV after calibration. Points on the diagonal = perfect fit. Heston 1.93% RMSE, SABR 0.97%, Merton 5.88% across 960 SPY contracts.</div>
+          <span class="tag">Phase 6</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 6: VALIDATION -->
+  <div class="section" data-section="validation">
+    <div class="section-header">
+      <div class="section-title">Out-of-Sample Validation</div>
+      <div class="section-desc">
+        End-to-end validation suite with 88 tests across all phases, covering pricing correctness, convergence rates, model consistency, and exotic option identities. Pass rate: 93.2% (82/88). Also quantifies model risk for barrier options, where model choice causes 10-27% price variation at the same strike and expiry.
+      </div>
+    </div>
+    <div class="grid wide">
+      <div class="card" data-category="validation" data-title="Out-of-Sample Validation Results" data-desc="Summary of all 88 validation tests. Green = pass, red = fail. Tests include: BS put-call parity (residual < 1e-8), IV round-trip error, binomial convergence to BS, MC within confidence bounds, barrier parity (Down-Out + Down-In = Vanilla), all models reducing to BS when stochastic params go to 0, and calibration stability checks. 93.2% pass rate (82/88)." onclick="openLightbox(this)">
+        <img src="https://raw.githubusercontent.com/kshitijbhandari/Options-Pricing-and-Volatility-Surface-Modeling-in-Python/master/outputs/phase8_out_of_sample.png" alt="Out-of-Sample Validation" loading="lazy"/>
+        <div class="card-body">
+          <div class="card-title">Validation Suite: 88 Tests, 93.2% Pass Rate</div>
+          <div class="card-desc">End-to-end test results across all phases. Covers pricing identities, convergence rates, model consistency, and calibration stability. Barrier model risk: 10-27% price spread across models at identical strikes.</div>
+          <span class="tag">Phase 8</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="closeLightboxOnBackdrop(event)">
+  <button class="lightbox-close" onclick="closeLightbox()">&#x2715;</button>
+  <button class="lightbox-nav prev" onclick="navigate(-1)">&#8249;</button>
+  <img id="lightbox-img" src="" alt=""/>
+  <div class="lightbox-caption">
+    <div class="lc-title" id="lc-title"></div>
+    <div class="lc-desc" id="lc-desc"></div>
+    <div class="lightbox-counter" id="lc-counter"></div>
+  </div>
+  <button class="lightbox-nav next" onclick="navigate(1)">&#8250;</button>
+</div>
+
+<script>
+  /* ── Filter ── */
+  const filterBtns = document.querySelectorAll('.filter-btn');
+  const allCards   = Array.from(document.querySelectorAll('.card'));
+  const allSections = Array.from(document.querySelectorAll('.section[data-section]'));
+  let activeFilter = 'all';
+
+  filterBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeFilter = btn.dataset.filter;
+      filterBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      allCards.forEach(card => {
+        const show = activeFilter === 'all' || card.dataset.category === activeFilter;
+        card.classList.toggle('hidden', !show);
+      });
+
+      allSections.forEach(section => {
+        const visible = section.querySelectorAll('.card:not(.hidden)').length > 0;
+        section.style.display = visible ? '' : 'none';
+      });
+    });
+  });
+
+  /* ── Lightbox ── */
+  let current = 0;
+
+  function visibleCards() {
+    return allCards.filter(c => !c.classList.contains('hidden'));
+  }
+
+  function openLightbox(card) {
+    const vc = visibleCards();
+    current = vc.indexOf(card);
+    showImage(current);
+    document.getElementById('lightbox').classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function showImage(index) {
+    const vc = visibleCards();
+    const card = vc[index];
+    const imgEl = document.getElementById('lightbox-img');
+
+    imgEl.classList.add('fading');
+    setTimeout(() => {
+      imgEl.src = card.querySelector('img').src;
+      imgEl.classList.remove('fading');
+    }, 120);
+
+    document.getElementById('lc-title').textContent   = card.dataset.title || card.querySelector('.card-title').textContent;
+    document.getElementById('lc-desc').textContent    = card.dataset.desc  || '';
+    document.getElementById('lc-counter').textContent = (index + 1) + ' / ' + vc.length;
+  }
+
+  function navigate(dir) {
+    const vc = visibleCards();
+    current = (current + dir + vc.length) % vc.length;
+    showImage(current);
+  }
+
+  function closeLightbox() {
+    document.getElementById('lightbox').classList.remove('active');
+    document.body.style.overflow = '';
+  }
+
+  function closeLightboxOnBackdrop(e) {
+    if (e.target === document.getElementById('lightbox')) closeLightbox();
+  }
+
+  document.addEventListener('keydown', e => {
+    if (!document.getElementById('lightbox').classList.contains('active')) return;
+    if (e.key === 'Escape')      closeLightbox();
+    if (e.key === 'ArrowRight')  navigate(1);
+    if (e.key === 'ArrowLeft')   navigate(-1);
+  });
+
+  /* ── Animated stats counter ── */
+  function animateCounter(el) {
+    const target  = parseFloat(el.dataset.target);
+    const suffix  = el.dataset.suffix;
+    const isFloat = target % 1 !== 0;
+    const duration = 1600;
+    const start = performance.now();
+
+    function step(now) {
+      const progress = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const value = target * eased;
+      el.textContent = (isFloat ? value.toFixed(2) : Math.round(value)) + suffix;
+      if (progress < 1) requestAnimationFrame(step);
+      else el.textContent = (isFloat ? target.toFixed(2) : target) + suffix;
+    }
+
+    requestAnimationFrame(step);
+  }
+
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        document.querySelectorAll('.stat-value[data-target]').forEach(animateCounter);
+        observer.disconnect();
+      }
+    });
+  }, { threshold: 0.3 });
+
+  observer.observe(document.querySelector('.stats-bar'));
+</script>
+
+</body>
+</html>
